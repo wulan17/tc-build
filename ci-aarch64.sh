@@ -26,7 +26,7 @@ function do_binutils() {
     "$base"/build-binutils.py \
         --install-folder "$install" \
         --show-build-commands \
-        --targets aarch64 arm
+        --targets aarch64
 }
 
 function do_deps() {
@@ -34,9 +34,9 @@ function do_deps() {
     [[ -z ${GITHUB_ACTIONS:-} ]] && return 0
 
     # Refresh mirrorlist to avoid dead mirrors
-    sudo apt-get update -y
+    apt-get update -y
 
-    sudo apt-get install -y --no-install-recommends \
+    apt-get install -y --no-install-recommends \
         bc \
         bison \
         ca-certificates \
@@ -55,6 +55,7 @@ function do_deps() {
         ninja-build \
         python3 \
         texinfo \
+        wget \
         xz-utils \
         zlib1g-dev
 
@@ -71,9 +72,10 @@ function do_llvm() {
     TomTal=$TomTal+1
 
     "$base"/build-llvm.py \
+        --build-stage1-only \
         --install-folder "$install" \
         --vendor-string "Mayuri" \
-        --targets AArch64 ARM \
+        --targets AArch64 \
         --defines "LLVM_PARALLEL_COMPILE_JOBS=$TomTal LLVM_PARALLEL_LINK_JOBS=$TomTal CMAKE_C_FLAGS='-g0 -O3' CMAKE_CXX_FLAGS='-g0 -O3' LLVM_USE_LINKER=lld LLVM_ENABLE_LLD=ON" \
         --shallow-clone \
         --projects clang compiler-rt lld polly openmp \
@@ -89,12 +91,12 @@ function do_compress() {
     rm -f "$install"/lib/*.a "$install"/lib/*.la
 
     # Strip remaining binaries
-    for f in $(find "$install" -type f -exec file {} \; | grep 'not stripped' | awk '{print $1}'); do
+    for f in $(find install -type f -exec file {} \; | grep 'not stripped' | awk '{print $1}'); do
         strip -s "${f::-1}"
     done
 
     # Set executable rpaths so setting LD_LIBRARY_PATH isn't necessary
-    for bin in $(find "$install" -mindepth 2 -maxdepth 3 -type f -exec file {} \; | grep 'ELF .* interpreter' | awk '{print $1}'); do
+    for bin in $(find install -mindepth 2 -maxdepth 3 -type f -exec file {} \; | grep 'ELF .* interpreter' | awk '{print $1}'); do
         # Remove last character from file output (':')
         bin="${bin::-1}"
 
