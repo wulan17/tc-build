@@ -2,7 +2,6 @@
 
 base=$(dirname "$(readlink -f "$0")")
 install=$base/install
-src=$base/src
 export PATH="$base/.clang/bin:$PATH"
 
 set -eu
@@ -10,7 +9,7 @@ set -eu
 function parse_parameters() {
     while (($#)); do
         case $1 in
-            all | binutils | deps | kernel | llvm | compress) action=$1 ;;
+            all | binutils | deps | llvm | compress) action=$1 ;;
             *) exit 33 ;;
         esac
         shift
@@ -21,14 +20,13 @@ function do_all() {
     do_deps
     do_llvm
     do_binutils
-    do_kernel
 }
 
 function do_binutils() {
     "$base"/build-binutils.py \
         --install-folder "$install" \
         --show-build-commands \
-        --targets aarch64 arm x86_64
+        --targets aarch64 arm
 }
 
 function do_deps() {
@@ -67,41 +65,10 @@ function do_deps() {
         xz-utils \
         zlib1g-dev
 
-    wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
+    wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.6/LLVM-20.1.6-Linux-ARM64.tar.xz
     mkdir -p "$base"/.clang
-    tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
-    rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
-}
-
-function do_kernel() {
-    local branch=linux-rolling-stable
-    local linux=$src/$branch
-
-    if [[ -d $linux ]]; then
-        git -C "$linux" fetch --depth=1 origin $branch
-        git -C "$linux" reset --hard FETCH_HEAD
-    else
-        git clone \
-            --branch "$branch" \
-            --depth=1 \
-            --single-branch \
-            https://git.kernel.org/pub/scm/linux/kernel/git/stable/linux.git \
-            "$linux"
-    fi
-
-    cat <<EOF | env PYTHONPATH="$base"/tc_build python3 -
-from pathlib import Path
-
-from kernel import LLVMKernelBuilder
-
-builder = LLVMKernelBuilder()
-builder.folders.build = Path('$base/build/linux')
-builder.folders.source = Path('$linux')
-builder.matrix = {'defconfig': ['X86']}
-builder.toolchain_prefix = Path('$install')
-
-builder.build()
-EOF
+    tar -xf LLVM-20.1.6-Linux-ARM64.tar.xz -C "$base"/.clang
+    rm LLVM-20.1.6-Linux-ARM64.tar.xz
 }
 
 function do_llvm() {
@@ -113,7 +80,7 @@ function do_llvm() {
     "$base"/build-llvm.py \
         --install-folder "$install" \
         --vendor-string "Mayuri" \
-        --targets AArch64 ARM X86 \
+        --targets AArch64 ARM \
         --defines "LLVM_PARALLEL_COMPILE_JOBS=$TomTal LLVM_PARALLEL_LINK_JOBS=$TomTal CMAKE_C_FLAGS='-g0 -O3' CMAKE_CXX_FLAGS='-g0 -O3' LLVM_USE_LINKER=lld LLVM_ENABLE_LLD=ON" \
         --shallow-clone \
         --projects clang compiler-rt lld polly openmp \
@@ -147,7 +114,7 @@ function do_compress() {
 
     # Compress the install folder to save space
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-"$git_hash".tar.xz -- *
+    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-aarch64-"$git_hash".tar.xz -- *
 }
 
 parse_parameters "$@"

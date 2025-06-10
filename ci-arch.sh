@@ -36,41 +36,39 @@ function do_deps() {
     [[ -z ${GITHUB_ACTIONS:-} ]] && return 0
 
     # Refresh mirrorlist to avoid dead mirrors
-    apt-get update -y
+    pacman -Syu --noconfirm
 
-    apt-get install -y --no-install-recommends \
+    pacman -S --noconfirm --needed \
+        base-devel \
         bc \
         bison \
-        ca-certificates \
+        ccache \
         clang \
         cmake \
-        curl \
-        file \
+        compiler-rt \
+        cpio \
         flex \
-        g++ \
-        gcc \
         git \
-        libbsd-dev \
-        libcap-dev \
-        libedit-dev \
-        libelf-dev \
-        libffi-dev \
-        libssl-dev \
-        libstdc++-12-dev \
+        libarchive \
+        libbsd \
+        libcap \
+        libedit \
+        libelf \
+        libffi \
+        libtool \
         lld \
-        make \
-        ninja-build \
+        llvm \
+        ninja \
+        openmp \
+        openssl \
         patchelf \
         python3 \
         texinfo \
+        uboot-tools \
         wget \
-        xz-utils \
-        zlib1g-dev
+        xz \
+        zlib
 
-    wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
-    mkdir -p "$base"/.clang
-    tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
-    rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
 }
 
 function do_kernel() {
@@ -147,7 +145,7 @@ function do_compress() {
 
     # Compress the install folder to save space
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-"$git_hash".tar.xz -- *
+    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-archlinux-"$git_hash".tar.xz -- *
 }
 
 parse_parameters "$@"
