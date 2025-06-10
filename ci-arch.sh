@@ -36,32 +36,28 @@ function do_deps() {
     [[ -z ${GITHUB_ACTIONS:-} ]] && return 0
 
     # Refresh mirrorlist to avoid dead mirrors
-    sudo apt-get update -y
+    pacman -Syu --noconfirm
 
-    sudo apt-get install -y --no-install-recommends \
+    pacman -S --noconfirm --needed \
+        base-devel \
         bc \
         bison \
-        ca-certificates \
+        ccache \
+        clang \
+        compiler-rt \
+        cpio \
         cmake \
-        curl \
-        file \
         flex \
-        gcc \
-        g++ \
         git \
-        libelf-dev \
-        libssl-dev \
-        make \
-        ninja-build \
+        libelf \
+        lld \
+        llvm \
+        ninja \
+        openmp \
+        openssl \
         python3 \
-        texinfo \
-        xz-utils \
-        zlib1g-dev
+        uboot-tools
 
-    wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
-    mkdir -p "$base"/.clang
-    tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
-    rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
 }
 
 function do_kernel() {
@@ -138,7 +134,7 @@ function do_compress() {
 
     # Compress the install folder to save space
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-"$git_hash".tar.xz -- *
+    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-archlinux-"$git_hash".tar.xz -- *
 }
 
 parse_parameters "$@"

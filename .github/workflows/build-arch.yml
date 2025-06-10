@@ -1,21 +1,21 @@
-name: Build X86_64
+name: Build X86_64 (Archlinux)
 on:
   workflow_dispatch:
 jobs:
   build:
     runs-on: ubuntu-latest
     container:
-      image: debian:bookworm
+      image: archlinux:latest
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies
-      run: bash ci.sh deps
+      run: bash ci-arch.sh deps
     - name: Build LLVM
-      run: bash ci.sh llvm
+      run: bash ci-arch.sh llvm
     - name: Build binutils
-      run: bash ci.sh binutils
+      run: bash ci-arch.sh binutils
     - name: Compress artifacts
-      run: bash ci.sh compress
+      run: bash ci-arch.sh compress
     - uses: actions/upload-artifact@v4
       with:
         name: clang-aarch64
