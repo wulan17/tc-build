@@ -47,6 +47,7 @@ function do_deps() {
         cmake \
         compiler-rt \
         cpio \
+        curl \
         flex \
         git \
         libarchive \
@@ -144,8 +145,10 @@ function do_compress() {
     git_hash=$(git -C "$base"/src/llvm-project rev-parse --short HEAD)
 
     # Compress the install folder to save space
+    make -p "$base"/dist
     cd "$install"
     tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-archlinux-"$git_hash".tar.xz -- *
+    curl -X POST -F "file=@$base/dist/Mayuri-clang_21.0.0git-archlinux-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload
 }
 
 parse_parameters "$@"
