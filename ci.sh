@@ -67,10 +67,10 @@ function do_deps() {
         xz-utils \
         zlib1g-dev
 
-    wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
-    mkdir -p "$base"/.clang
-    tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
-    rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
+    #wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
+    #mkdir -p "$base"/.clang
+    #tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
+    #rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
 }
 
 function do_kernel() {
