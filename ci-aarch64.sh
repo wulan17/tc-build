@@ -65,10 +65,10 @@ function do_deps() {
         xz-utils \
         zlib1g-dev
 
-    wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.6/LLVM-20.1.6-Linux-ARM64.tar.xz
-    mkdir -p "$base"/.clang
-    tar -xf LLVM-20.1.6-Linux-ARM64.tar.xz -C "$base"/.clang
-    rm LLVM-20.1.6-Linux-ARM64.tar.xz
+    #wget -q https://github.com/llvm/llvm-project/releases/download/llvmorg-20.1.6/LLVM-20.1.6-Linux-ARM64.tar.xz
+    #mkdir -p "$base"/.clang
+    #tar -xf LLVM-20.1.6-Linux-ARM64.tar.xz -C "$base"/.clang
+    #rm LLVM-20.1.6-Linux-ARM64.tar.xz
 }
 
 function do_llvm() {
@@ -113,7 +113,7 @@ function do_compress() {
     git_hash=$(git -C "$base"/src/llvm-project rev-parse --short HEAD)
 
     # Compress the install folder to save space
-    make -p "$base"/dist
+    mkdir -p "$base"/dist
     cd "$install"
     tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-aarch64-"$git_hash".tar.xz -- *
     curl -X POST -F "file=@$base/dist/Mayuri-clang_21.0.0git-bookworm-aarch64-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload

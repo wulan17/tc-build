@@ -5,7 +5,7 @@ jobs:
   build:
     runs-on: ubuntu-22.04-arm
     container:
-      image: arm64v8/debian:bookworm
+      image: wulan17/debian-aarch64:latest
     steps:
     - uses: actions/checkout@v4
     - name: Install dependencies

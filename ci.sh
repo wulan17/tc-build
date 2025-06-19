@@ -67,10 +67,10 @@ function do_deps() {
         xz-utils \
         zlib1g-dev
 
-    wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
-    mkdir -p "$base"/.clang
-    tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
-    rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
+    #wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
+    #mkdir -p "$base"/.clang
+    #tar -xf Mayuri-clang_21.0.0git-dca74f794.tar.xz -C "$base"/.clang
+    #rm Mayuri-clang_21.0.0git-dca74f794.tar.xz
 }
 
 function do_kernel() {
@@ -146,7 +146,7 @@ function do_compress() {
     git_hash=$(git -C "$base"/src/llvm-project rev-parse --short HEAD)
 
     # Compress the install folder to save space
-    make -p "$base"/dist
+    mkdir -p "$base"/dist
     cd "$install"
     tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-"$git_hash".tar.xz -- *
     curl -X POST -F "file=@$base/dist/Mayuri-clang_21.0.0git-bookworm-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload
