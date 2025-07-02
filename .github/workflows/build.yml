@@ -1,22 +1,87 @@
-name: Build X86_64
+name: Build LLVM and Binutils
+
 on:
   workflow_dispatch:
+    inputs:
+      target:
+        description: 'Build target'
+        required: true
+        type: choice
+        options:
+          - all
+          - x86
+          - aarch64
+      llvm_ref:
+        description: 'LLVM branch, tag, or Full SHA'
+        required: true
+        default: 'release/20.x'
+      vendor_string:
+        description: 'Vendor string for the build'
+        required: true
+        default: 'Mayuri'
+
 jobs:
-  build:
+  build_x86_64:
+    if: contains(fromJson('["x86","all"]'), github.event.inputs.target)
     runs-on: ubuntu-latest
     container:
-      image: wulan17/debian:latest
+      image: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [wulan17/archlinux:latest, wulan17/debian:latest]
     steps:
-    - uses: actions/checkout@v4
+    - name: Checkout repository
+      uses: actions/checkout@v4
     - name: Install dependencies
       run: bash ci.sh deps
+    - name: Clone LLVM
+      uses: actions/checkout@v4
+      with:
+        repository: llvm/llvm-project
+        ref: ${{ github.event.inputs.llvm_ref }}
+        path: llvm-project
     - name: Build LLVM
       run: bash ci.sh llvm
+      env:
+        LLVM_VENDOR_STRING: ${{ github.event.inputs.vendor_string }}
     - name: Build binutils
       run: bash ci.sh binutils
     - name: Compress artifacts
       run: bash ci.sh compress
+      env:
+        LLVM_VENDOR_STRING: ${{ github.event.inputs.vendor_string }}
     - uses: actions/upload-artifact@v4
       with:
-        name: clang-bookworm
+        name: clang-x86_64
+        path: dist/
+
+  build_aarch64:
+    if: contains(fromJson('["aarch64","all"]'), github.event.inputs.target)
+    runs-on: ubuntu-22.04-arm
+    container:
+      image: wulan17/debian-aarch64:latest
+    steps:
+    - name: Checkout repository
+      uses: actions/checkout@v4
+    - name: Install dependencies
+      run: bash ci-aarch64.sh deps
+    - name: Clone LLVM
+      uses: actions/checkout@v4
+      with:
+        repository: llvm/llvm-project
+        ref: ${{ github.event.inputs.llvm_ref }}
+        path: llvm-project
+    - name: Build LLVM
+      run: bash ci-aarch64.sh llvm
+      env:
+        LLVM_VENDOR_STRING: ${{ github.event.inputs.vendor_string }}
+    - name: Build binutils
+      run: bash ci-aarch64.sh binutils
+    - name: Compress artifacts
+      run: bash ci-aarch64.sh compress
+      env:
+        LLVM_VENDOR_STRING: ${{ github.event.inputs.vendor_string }}
+    - uses: actions/upload-artifact@v4
+      with:
+        name: clang-aarch64
         path: dist/
