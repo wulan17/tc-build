@@ -34,9 +34,9 @@ function do_deps() {
     [[ -z ${GITHUB_ACTIONS:-} ]] && return 0
 
     # Refresh mirrorlist to avoid dead mirrors
-    apt-get update -y
+    apt update -y
 
-    apt-get install -y --no-install-recommends \
+    apt install -y --no-install-recommends \
         bc \
         bison \
         ca-certificates \
@@ -79,13 +79,13 @@ function do_llvm() {
 
     "$base"/build-llvm.py \
         --install-folder "$install" \
-        --vendor-string "Mayuri" \
+        --vendor-string "$LLVM_VENDOR_STRING" \
         --targets AArch64 ARM \
         --defines "LLVM_PARALLEL_COMPILE_JOBS=$TomTal LLVM_PARALLEL_LINK_JOBS=$TomTal CMAKE_C_FLAGS='-g0 -O3' CMAKE_CXX_FLAGS='-g0 -O3' LLVM_USE_LINKER=lld LLVM_ENABLE_LLD=ON" \
-        --shallow-clone \
         --projects clang compiler-rt lld polly openmp \
         --no-ccache \
         --quiet-cmake \
+        --llvm-folder "$base"/llvm-project \
         "${extra_args[@]}"
 }
 
@@ -110,13 +110,15 @@ function do_compress() {
     done
 
     # Get git commit hash
-    git_hash=$(git -C "$base"/src/llvm-project rev-parse --short HEAD)
+    git_hash=$(git -C "$base"/llvm-project rev-parse --short HEAD)
+    clang_version=$("$base"/install/bin/clang --version | head -n 1 | awk '{print $4}')
+    file_name=Mayuri-clang_"$clang_version"git-bookworm-aarch64-"$git_hash".tar.xz
 
     # Compress the install folder to save space
-    make -p "$base"/dist
+    mkdir -p "$base"/dist
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-aarch64-"$git_hash".tar.xz -- *
-    curl -X POST -F "file=@$base/dist/Mayuri-clang_21.0.0git-bookworm-aarch64-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload
+    tar -cJf "$base"/dist/"$file_name" -- *
+    curl -X POST -F "file=@$base/dist/$file_name" https://temp.wulan17.dev/api/v1/upload
 }
 
 parse_parameters "$@"

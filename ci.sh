@@ -4,6 +4,11 @@ base=$(dirname "$(readlink -f "$0")")
 install=$base/install
 src=$base/src
 export PATH="$base/.clang/bin:$PATH"
+if [[ $(command -v apt) ]]; then
+    export OS=debian
+else
+    export OS=archlinux
+fi
 
 set -eu
 
@@ -34,38 +39,72 @@ function do_binutils() {
 function do_deps() {
     # We only run this when running on GitHub Actions
     [[ -z ${GITHUB_ACTIONS:-} ]] && return 0
+    if [[ $OS == "archlinux" ]]; then
+        # Refresh mirrorlist to avoid dead mirrors
+        pacman -Syu --noconfirm
 
-    # Refresh mirrorlist to avoid dead mirrors
-    apt-get update -y
+        pacman -S --noconfirm --needed \
+            base-devel \
+            bc \
+            bison \
+            ccache \
+            clang \
+            cmake \
+            compiler-rt \
+            cpio \
+            curl \
+            flex \
+            git \
+            libarchive \
+            libbsd \
+            libcap \
+            libedit \
+            libelf \
+            libffi \
+            libtool \
+            lld \
+            llvm \
+            make \
+            ninja \
+            openssl \
+            patchelf \
+            python-pyelftools \
+            python-setuptools \
+            python3 \
+            uboot-tools
+    else
+        # Refresh mirrorlist to avoid dead mirrors
+        apt update -y
 
-    apt-get install -y --no-install-recommends \
-        bc \
-        bison \
-        ca-certificates \
-        clang \
-        cmake \
-        curl \
-        file \
-        flex \
-        g++ \
-        gcc \
-        git \
-        libbsd-dev \
-        libcap-dev \
-        libedit-dev \
-        libelf-dev \
-        libffi-dev \
-        libssl-dev \
-        libstdc++-12-dev \
-        lld \
-        make \
-        ninja-build \
-        patchelf \
-        python3 \
-        texinfo \
-        wget \
-        xz-utils \
-        zlib1g-dev
+        apt install -y --no-install-recommends \
+            bc \
+            bison \
+            ca-certificates \
+            clang \
+            cmake \
+            curl \
+            file \
+            flex \
+            g++ \
+            gcc \
+            git \
+            libbsd-dev \
+            libcap-dev \
+            libedit-dev \
+            libelf-dev \
+            libffi-dev \
+            libssl-dev \
+            libstdc++-12-dev \
+            lld \
+            make \
+            ninja-build \
+            patchelf \
+            python3 \
+            texinfo \
+            wget \
+            xz-utils \
+            zlib1g-dev
+    fi
 
     #wget -q https://wulan17.dev/d/Mayuri-clang_21.0.0git-dca74f794.tar.xz
     #mkdir -p "$base"/.clang
@@ -112,13 +151,13 @@ function do_llvm() {
 
     "$base"/build-llvm.py \
         --install-folder "$install" \
-        --vendor-string "Mayuri" \
+        --vendor-string "$LLVM_VENDOR_STRING" \
         --targets AArch64 ARM X86 \
         --defines "LLVM_PARALLEL_COMPILE_JOBS=$TomTal LLVM_PARALLEL_LINK_JOBS=$TomTal CMAKE_C_FLAGS='-g0 -O3' CMAKE_CXX_FLAGS='-g0 -O3' LLVM_USE_LINKER=lld LLVM_ENABLE_LLD=ON" \
-        --shallow-clone \
         --projects clang compiler-rt lld polly openmp \
         --no-ccache \
         --quiet-cmake \
+        --llvm-folder "$base"/llvm-project \
         "${extra_args[@]}"
 }
 
@@ -143,13 +182,19 @@ function do_compress() {
     done
 
     # Get git commit hash
-    git_hash=$(git -C "$base"/src/llvm-project rev-parse --short HEAD)
+    git_hash=$(git -C "$base"/llvm-project rev-parse --short HEAD)
+    clang_version=$("$base"/install/bin/clang --version | head -n 1 | awk '{print $4}')
 
+    if [[ $OS == "archlinux" ]]; then
+        file_name=Mayuri-clang_"$clang_version"git-archlinux-"$git_hash".tar.xz
+    elif [[ $OS == "debian" ]]; then
+        file_name=Mayuri-clang_"$clang_version"git-bookworm-"$git_hash".tar.xz
+    fi
     # Compress the install folder to save space
-    make -p "$base"/dist
+    mkdir -p "$base"/dist
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_21.0.0git-bookworm-"$git_hash".tar.xz -- *
-    curl -X POST -F "file=@$base/dist/Mayuri-clang_21.0.0git-bookworm-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload
+    tar -cJf "$base"/dist/"$file_name" -- *
+    curl -X POST -F "file=@$base/dist/$file_name" https://temp.wulan17.dev/api/v1/upload
 }
 
 parse_parameters "$@"
