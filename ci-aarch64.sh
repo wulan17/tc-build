@@ -9,7 +9,7 @@ set -eu
 function parse_parameters() {
     while (($#)); do
         case $1 in
-            all | binutils | deps | llvm | compress) action=$1 ;;
+            all | binutils | deps | llvm | compress | release) action=$1 ;;
             *) exit 33 ;;
         esac
         shift
@@ -47,6 +47,7 @@ function do_deps() {
         flex \
         g++ \
         gcc \
+        gh \
         git \
         libbsd-dev \
         libcap-dev \
@@ -112,11 +113,48 @@ function do_compress() {
     # Get git commit hash
     git_hash=$(git -C "$base"/llvm-project rev-parse --short HEAD)
 
+    clang_version=$("$base"/install/bin/clang --version | head -n 1 | awk '{print $3}')
     # Compress the install folder to save space
     mkdir -p "$base"/dist
     cd "$install"
-    tar -cJf "$base"/dist/Mayuri-clang_20.0.0git-bookworm-aarch64-"$git_hash".tar.xz -- *
-    curl -X POST -F "file=@$base/dist/Mayuri-clang_20.0.0git-bookworm-aarch64-$git_hash.tar.xz" https://temp.wulan17.dev/api/v1/upload
+    file_name="$LLVM_VENDOR_STRING"-clang_"$clang_version"git-bookworm-aarch64-"$git_hash".tar.xz
+    tar -cJf "$base"/dist/"$file_name" -- *
+    curl -X POST -F "file=@$base/dist/$file_name" https://temp.wulan17.dev/api/v1/upload
+}
+
+function do_release() {
+    # Upload to GitHub Releases using GitHub CLI
+    file_name=""
+    while IFS= read -r -d '' f; do
+        file_name="$f"
+        break
+    done < <(find "$base"/dist/ -maxdepth 1 -name "${LLVM_VENDOR_STRING}-clang_*.tar.xz" -print0)
+    if [[ -z $file_name ]]; then
+        echo "No file found to upload."
+        exit 1
+    fi
+    clang_version=$("$base"/install/bin/clang --version | head -n 1 | awk '{print $3}')
+    git_hash=$(git -C "$base"/llvm-project rev-parse --short HEAD)
+
+    TAG="$clang_version-$git_hash"
+    ASSET="$file_name"
+    REPO="$GITHUB_REPOSITORY"
+    TITLE="$LLVM_VENDOR_STRING Clang $clang_version ($git_hash)"
+    NOTES="$LLVM_VENDOR_STRING Clang $clang_version ($git_hash)"
+
+    # Check if release exists
+    if gh release view "$TAG" --repo "$REPO" &>/dev/null; then
+        echo "Release $TAG exists, uploading asset..."
+        gh release upload "$TAG" "$ASSET" --repo "$REPO" --clobber
+    else
+        echo "Release $TAG does not exist, creating release and uploading asset..."
+        gh release create "$TAG" "$ASSET" \
+            --title "$TITLE" \
+            --notes "$NOTES" \
+            --target "$GITHUB_REF_NAME" \
+            --repo "$REPO"
+    fi
+    echo "Released successfully."
 }
 
 parse_parameters "$@"
