@@ -155,6 +155,7 @@ function do_llvm() {
         --no-ccache \
         --quiet-cmake \
         --llvm-folder "$base"/llvm-project \
+        --lto thin \
         "${extra_args[@]}"
 }
 
